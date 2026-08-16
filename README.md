@@ -18,6 +18,7 @@ The system was evaluated using the research paper:
 ## 🖥️ Demo
 
 ![Hybrid RAG Document Assistant](assets/demo.png)
+![Hybrid RAG Document Assistant](assets/demo2.png)
 
 
 ---
