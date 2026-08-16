@@ -12,6 +12,14 @@ The system was evaluated using the research paper:
 
 > **Attention Is All You Need** — Vaswani et al.
 
+
+---
+
+## 🖥️ Demo
+
+![Hybrid RAG Document Assistant](assets/demo.png)
+
+
 ---
 
 ## 🚀 Overview
