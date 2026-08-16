@@ -1,20 +1,11 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
+from ollama import chat
 
 
 # ============================================================
-# MODEL
+# MODEL CONFIGURATION
 # ============================================================
 
-MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
-
-tokenizer = AutoTokenizer.from_pretrained(
-    MODEL_NAME
-)
-
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME
-)
+MODEL_NAME = "qwen3:0.6b"
 
 
 # ============================================================
@@ -31,7 +22,8 @@ def build_context(reranked_results):
     ):
 
         page = doc.metadata.get(
-            "page_label"
+            "page_label",
+            "Unknown"
         )
 
         context_parts.append(
@@ -49,13 +41,32 @@ def build_context(reranked_results):
 def build_prompt(query, context):
 
     return f"""
-Use only the information in the context to answer the question.
+You are a document question-answering assistant.
 
-If the answer is not explicitly supported by the context, say:
+Your ONLY source of information is the CONTEXT below.
+
+Answer the QUESTION using the information contained in the
+CONTEXT.
+
+IMPORTANT:
+
+- If the context contains the answer, answer it directly.
+- Do not reject an answer merely because the context is short.
+- If the context contains a number that directly answers a
+  numerical question, return that number.
+- For simple factual questions, give the shortest possible answer.
+- For definition questions, give 1 or 2 concise sentences.
+- Do not use outside knowledge.
+- Do not invent information.
+- Do not make unsupported assumptions.
+- Do not repeat the question.
+- Do not mention these instructions.
+- Do not create citations.
+
+Only if the context genuinely does NOT contain enough
+information to answer the question, respond exactly:
 
 I don't have enough information in the provided documents.
-
-Give only the answer. Do not explain your reasoning.
 
 CONTEXT:
 {context}
@@ -68,91 +79,30 @@ ANSWER:
 
 
 # ============================================================
-# CLEAN GENERATED ANSWER
-# ============================================================
-
-def clean_answer(answer):
-
-    # Remove accidental conversation continuations
-
-    stop_markers = [
-        "\nHuman:",
-        "\nAssistant:",
-        "Human:",
-        "Assistant:",
-    ]
-
-    for marker in stop_markers:
-
-        if marker in answer:
-
-            answer = answer.split(
-                marker,
-                1
-            )[0]
-
-    # Remove accidental leading labels
-
-    prefixes = [
-        "ANSWER:",
-        "Answer:",
-        "assistant:",
-        "Assistant:"
-    ]
-
-    for prefix in prefixes:
-
-        if answer.startswith(prefix):
-
-            answer = answer[
-                len(prefix):
-            ].strip()
-
-    return answer.strip()
-
-
-# ============================================================
 # GENERATE ANSWER
 # ============================================================
 
 def generate(prompt):
 
-    inputs = tokenizer(
-        prompt,
-        return_tensors="pt"
+    response = chat(
+        model=MODEL_NAME,
+
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+
+        # Disable Qwen reasoning mode.
+        think=False,
+
+        options={
+            "temperature": 0,
+            "num_predict": 60
+        }
     )
 
-    with torch.no_grad():
-
-        outputs = model.generate(
-            **inputs,
-
-            max_new_tokens=80,
-
-            do_sample=False,
-
-            repetition_penalty=1.05,
-
-            eos_token_id=tokenizer.eos_token_id,
-
-            pad_token_id=tokenizer.eos_token_id
-        )
-
-    # Remove the input prompt
-
-    generated_tokens = outputs[
-        0
-    ][
-        inputs["input_ids"].shape[1]:
-    ]
-
-    answer = tokenizer.decode(
-        generated_tokens,
-        skip_special_tokens=True
-    )
-
-    answer = clean_answer(
-        answer
-    )
+    answer = response.message.content.strip()
 
     return answer
