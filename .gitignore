@@ -1,0 +1,42 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Secrets / credentials
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+credentials.json
+service-account*.json
+
+# Python virtual environments
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local data / documents
+data/pdfs/
+
+# Build / distribution
+dist/
+build/
+out/
+coverage/
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
